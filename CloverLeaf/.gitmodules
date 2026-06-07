@@ -1,0 +1,24 @@
+[submodule "CloverLeaf_ref"]
+	path = CloverLeaf_ref
+	url = https://github.com/UK-MAC/CloverLeaf_ref.git
+[submodule "CloverLeaf_CUDA"]
+	path = CloverLeaf_CUDA
+	url = https://github.com/UK-MAC/CloverLeaf_CUDA.git
+[submodule "CloverLeaf_Offload"]
+	path = CloverLeaf_Offload
+	url = https://github.com/UK-MAC/CloverLeaf_Offload.git
+[submodule "CloverLeaf_Serial"]
+	path = CloverLeaf_Serial
+	url = https://github.com/UK-MAC/CloverLeaf_Serial.git
+[submodule "CloverLeaf_OpenMP"]
+	path = CloverLeaf_OpenMP
+	url = https://github.com/UK-MAC/CloverLeaf_OpenMP.git
+[submodule "CloverLeaf_MPI"]
+	path = CloverLeaf_MPI
+	url = https://github.com/UK-MAC/CloverLeaf_MPI.git
+[submodule "CloverLeaf_OpenMP4"]
+	path = CloverLeaf_OpenMP4
+	url = https://github.com/UK-MAC/CloverLeaf_OpenMP4.git
+[submodule "CloverLeaf_OpenACC"]
+	path = CloverLeaf_OpenACC
+	url = https://github.com/UK-MAC/CloverLeaf_OpenACC.git
