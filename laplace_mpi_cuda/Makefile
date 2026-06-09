@@ -117,15 +117,16 @@ CXX = mpicxx
 NVCC = nvcc
 
 # 普通C++编译器：包含CUDA头文件
-CXXFLAGS = -O3 -Wall -fopenmp -I/usr/local/cuda/include
+CXXFLAGS = -O3 -Wall -fopenmp -I/usr/local/cuda/include -I$(SRCDIR)
 
 # 关键修复：给NVCC编译器补上MPI的头文件路径
-CUDAFLAGS = -O3 -arch=sm_75 -std=c++17 -I/usr/lib/x86_64-linux-gnu/openmpi/include
+CUDAFLAGS = -O3 -arch=sm_86 -std=c++17 -I/usr/lib/x86_64-linux-gnu/openmpi/include -I$(SRCDIR)
 
 # 链接器：显式链接CUDA运行时库
 LDFLAGS = -lm -fopenmp -L/usr/local/cuda/lib64 -lcudart
 
 TARGET = laplace_mpi_cuda
+SINGLE_TARGET = laplace_cuda_single
 SRCDIR = src
 OBJDIR = obj
 
@@ -135,8 +136,7 @@ SOURCES = $(SRCDIR)/laplace_solver.cpp \
 
 # 关键修复 4：把所有 CUDA 源码文件全部抓进来
 CUDA_SOURCES = $(SRCDIR)/laplace_cuda.cu \
-               $(SRCDIR)/stream_async.cu \
-               $(SRCDIR)/main_async.cu
+               $(SRCDIR)/stream_async.cu
 
 # 包含所有的头文件依赖
 HEADERS = $(SRCDIR)/laplace_solver.h \
@@ -144,8 +144,10 @@ HEADERS = $(SRCDIR)/laplace_solver.h \
 
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 CUDA_OBJECTS = $(CUDA_SOURCES:$(SRCDIR)/%.cu=$(OBJDIR)/%.o)
+MAIN_OBJECT = $(OBJDIR)/main.o
+SINGLE_OBJECT = $(OBJDIR)/main_single_cuda.o
 
-all: $(TARGET)
+all: $(TARGET) $(SINGLE_TARGET)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -153,14 +155,20 @@ $(OBJDIR):
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(OBJDIR)/main.o: main.cpp $(HEADERS) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.cu $(HEADERS) | $(OBJDIR)
 	$(NVCC) $(CUDAFLAGS) -c $< -o $@
 
-$(TARGET): $(OBJECTS) $(CUDA_OBJECTS)
+$(TARGET): $(MAIN_OBJECT) $(OBJECTS) $(CUDA_OBJECTS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
+$(SINGLE_TARGET): $(SINGLE_OBJECT)
+	$(NVCC) $(CUDAFLAGS) $^ -o $@
+
 clean:
-	rm -rf $(OBJDIR) $(TARGET)
+	rm -rf $(OBJDIR) $(TARGET) $(SINGLE_TARGET)
 
 # 下面你原本自带的自动化测试目标全部保持不变
 run: $(TARGET)

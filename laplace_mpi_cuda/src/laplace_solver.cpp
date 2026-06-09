@@ -68,12 +68,18 @@ void init_grid(Grid *grid, int nx_local, int ny_local) {
     grid->h_u_new = (double *)calloc(size, sizeof(double));
     grid->d_u = NULL;
     grid->d_u_new = NULL;
+    grid->h_pin_row_snd = NULL;
+    grid->h_pin_row_rcv = NULL;
+    grid->h_pin_col_snd = NULL;
+    grid->h_pin_col_rcv = NULL;
+    grid->d_col_l = NULL;
+    grid->d_col_r = NULL;
 }
 
 /**
  * init_boundary - 初始化狄利克雷边界条件
  * 
- * 四周边界均为0
+ * 顶部边界为1，底/左/右边界为0
  */
 void init_boundary(Grid *grid, SolverConfig *cfg) {
     int nx_local = grid->nx_local;
@@ -84,7 +90,7 @@ void init_boundary(Grid *grid, SolverConfig *cfg) {
     int rank = cfg->rank;
     int size = cfg->size;
     
-    // 上边界（全局第一行，只有rank=0的进程有）
+    // 底边界（全局第一行，只有rank=0的进程有）
     if (rank == 0) {
         for (int j = 0; j <= nx_local + 1; j++) {
             u[0 * stride + j] = 0.0;
@@ -92,11 +98,11 @@ void init_boundary(Grid *grid, SolverConfig *cfg) {
         }
     }
     
-    // 下边界（全局最后一行，只有rank=size-1的进程有）
+    // 顶边界（全局最后一行，只有rank=size-1的进程有）
     if (rank == size - 1) {
-        for (int j = 0; j <= nx_local + 1; j++) {
-            u[(ny_local + 1) * stride + j] = 0.0;
-            u_new[(ny_local + 1) * stride + j] = 0.0;
+        for (int j = 1; j <= nx_local; j++) {
+            u[(ny_local + 1) * stride + j] = 1.0;
+            u_new[(ny_local + 1) * stride + j] = 1.0;
         }
     }
     
@@ -373,8 +379,20 @@ double solve_cpu(Grid *grid, SolverConfig *cfg) {
 void free_grid(Grid *grid) {
     if (grid->h_u) free(grid->h_u);
     if (grid->h_u_new) free(grid->h_u_new);
+    if (grid->h_pin_row_snd) cudaFreeHost(grid->h_pin_row_snd);
+    if (grid->h_pin_row_rcv) cudaFreeHost(grid->h_pin_row_rcv);
+    if (grid->h_pin_col_snd) cudaFreeHost(grid->h_pin_col_snd);
+    if (grid->h_pin_col_rcv) cudaFreeHost(grid->h_pin_col_rcv);
+    if (grid->d_col_l) cudaFree(grid->d_col_l);
+    if (grid->d_col_r) cudaFree(grid->d_col_r);
     grid->h_u = NULL;
     grid->h_u_new = NULL;
+    grid->h_pin_row_snd = NULL;
+    grid->h_pin_row_rcv = NULL;
+    grid->h_pin_col_snd = NULL;
+    grid->h_pin_col_rcv = NULL;
+    grid->d_col_l = NULL;
+    grid->d_col_r = NULL;
 }
 
 void finalize_mpi() {

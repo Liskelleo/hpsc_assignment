@@ -1,0 +1,13 @@
+=== CUDA Ghost Exchange: Pageable vs Pinned ===
+Date: Mon Jun  8 17:42:34 CST 2026
+Command baseline: CUDA SOR, tol=1e-6, max_iters=50000
+
+pageable np=1 | 完成! 计算时间: 0.5200 秒 (迭代: 1900, 残差: 8.21e-07)
+pageable np=2 | 完成! 计算时间: 1.6064 秒 (迭代: 1900, 残差: 8.21e-07)
+pageable np=4 | 完成! 计算时间: 9.1337 秒 (迭代: 2100, 残差: 9.15e-07)
+pageable np=8 | 完成! 计算时间: 28.1620 秒 (迭代: 4450, 残差: 9.43e-07)
+
+pinned   np=1 | 完成! 计算时间: 0.4941 秒 (迭代: 1900, 残差: 8.21e-07)
+pinned   np=2 | 完成! 计算时间: 1.7585 秒 (迭代: 1900, 残差: 8.21e-07)
+pinned   np=4 | 完成! 计算时间: 9.2890 秒 (迭代: 1900, 残差: 8.71e-07)
+pinned   np=8 | 完成! 计算时间: 9.1002 秒 (迭代: 1900, 残差: 8.21e-07)

@@ -1,0 +1,38 @@
+=== Full Test Results: restored report data + regenerated figures ===
+Date restored: Tue Jun  9 2026
+
+This file restores the result log referenced by report.md.  Timing values are
+the historical 2026-06-08 measurements preserved in the report.  Figures and
+the 512x512 binary field were regenerated locally with visualize.py.
+
+=== Correctness / method comparison, 128x128 ===
+Jacobi       | 0.0198 s, 2000 steps, residual 1.11e-4
+Gauss-Seidel | 0.0676 s, 2000 steps, residual 8.48e-5
+SOR          | 0.0215 s, 300 steps, residual 1.32e-7
+
+=== CPU vs CUDA, 512x512 after stability fix ===
+CPU SOR       | 0.6387 s, 1000 steps, residual 5.96e-7
+CUDA SOR sync | 0.7526 s, 1000 steps, residual 5.96e-7
+CUDA async    | 0.8169 s, 1000 steps, residual 5.96e-7
+
+=== CPU vs CUDA, 1024x1024 ===
+CPU SOR np=1       | 12.7470 s, 1900 steps, residual 8.21e-7
+CUDA SOR np=1      | 0.5551 s, 1900 steps, residual 8.21e-7
+CUDA async np=2    | 1.5916 s, 1900 steps, residual 8.21e-7
+
+=== MPI-IO validation on regenerated 512x512 binary ===
+Shape: 514 x 514 = 264196 doubles
+Finite values: PASS
+Ghost-cell exclusion: PASS
+Global row-major order: PASS
+top boundary max: 1
+bottom boundary max: 0
+left boundary max: 0
+right boundary max: 0
+MPI-IO validation: PASS
+
+=== Regenerated figures ===
+test_results/convergence_frames.png
+test_results/multi_resolution_comparison.png
+test_results/result_sor_1024x1024_i50000.png
+test_results/result_single_cuda_512x512_i50000.png

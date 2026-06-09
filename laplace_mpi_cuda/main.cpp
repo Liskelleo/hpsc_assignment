@@ -19,7 +19,7 @@
  *   argv[6] - use_cuda (0/1，默认1)
  *   argv[7] - use_async (0/1，默认0，选做)
  * 
- * 边界条件：四周均为0，内部初始化为1（产生梯度）
+ * 边界条件：顶部为1，底/左/右为0，内部初始化为1（产生梯度）
  */
 
 #include "laplace_solver.h"
@@ -104,8 +104,8 @@ int main(int argc, char *argv[]) {
     
     // ========== 7. 求解 ==========
     double elapsed;
-    int final_iter;
-    double final_resid;
+    int final_iter = 0;
+    double final_resid = 0.0;
     
     if (use_cuda) {
         // CUDA版本

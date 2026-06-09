@@ -93,7 +93,7 @@ __global__ void sor_kernel(double *u, int nx_local, int ny_local, int stride,
  * ============================================================ */
 __global__ void residual_kernel(double *u, double *residual, int nx_local, int ny_local, int stride) {
     __shared__ double shared_resid[256];
-    int tid = threadIdx.x;
+    int tid = threadIdx.y * blockDim.x + threadIdx.x;
     
     int j = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int i = blockIdx.y * blockDim.y + threadIdx.y + 1;
@@ -105,6 +105,7 @@ __global__ void residual_kernel(double *u, double *residual, int nx_local, int n
         double relaxation = 0.25 * (u[idx - 1] + u[idx + 1] + 
                                     u[idx - stride] + u[idx + stride]);
         double diff = fabs(relaxation - u[idx]);
+        if (!isfinite(diff)) diff = INFINITY;
         if (diff > local_resid) local_resid = diff;
     }
     
@@ -112,7 +113,8 @@ __global__ void residual_kernel(double *u, double *residual, int nx_local, int n
     shared_resid[tid] = local_resid;
     __syncthreads();
     
-    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+    int block_threads = blockDim.x * blockDim.y;
+    for (int s = block_threads / 2; s > 0; s >>= 1) {
         if (tid < s) {
             if (shared_resid[tid] < shared_resid[tid + s])
                 shared_resid[tid] = shared_resid[tid + s];
@@ -155,39 +157,58 @@ void copy_to_host(Grid *grid) {
  * 注意：CUDA kernel不能直接调用MPI，需要先复制到主机
  */
 void exchange_ghost_cuda(Grid *grid, SolverConfig *cfg, cudaStream_t stream) {
-    // 将边界数据复制到主机
-    cudaMemcpyAsync(grid->h_u, grid->d_u, 
-                    (grid->ny_local + 2) * grid->stride * sizeof(double),
-                    cudaMemcpyDeviceToHost, stream);
-    cudaStreamSynchronize(stream);
-    
-    // 调用MPI交换（CPU端）
     MPI_Status status;
     int rank = cfg->rank;
     int size = cfg->size;
     int nx_local = grid->nx_local;
     int ny_local = grid->ny_local;
     int stride = grid->stride;
-    double *u = grid->h_u;
-    
-    // 向上发送第1行，接收作为第0行
+    size_t row_bytes = (size_t)nx_local * sizeof(double);
+
+    int use_pageable = getenv("LAPLACE_USE_PAGEABLE_GHOST") != NULL;
+    double *send_buf = NULL;
+    double *recv_buf = NULL;
+
+    if (use_pageable) {
+        send_buf = (double *)malloc(row_bytes);
+        recv_buf = (double *)malloc(row_bytes);
+    } else {
+        if (!grid->h_pin_row_snd) cudaMallocHost(&grid->h_pin_row_snd, row_bytes);
+        if (!grid->h_pin_row_rcv) cudaMallocHost(&grid->h_pin_row_rcv, row_bytes);
+        send_buf = grid->h_pin_row_snd;
+        recv_buf = grid->h_pin_row_rcv;
+    }
+
+    // 向上发送第1行，接收作为第0行。
     if (rank > 0) {
-        MPI_Sendrecv(&u[1 * stride + 1], nx_local, MPI_DOUBLE, rank - 1, 0,
-                     &u[0 * stride + 1], nx_local, MPI_DOUBLE, rank - 1, 0,
+        cudaMemcpyAsync(send_buf, &grid->d_u[1 * stride + 1],
+                        row_bytes, cudaMemcpyDeviceToHost, stream);
+        cudaStreamSynchronize(stream);
+        MPI_Sendrecv(send_buf, nx_local, MPI_DOUBLE, rank - 1, 0,
+                     recv_buf, nx_local, MPI_DOUBLE, rank - 1, 0,
                      MPI_COMM_WORLD, &status);
+        cudaMemcpyAsync(&grid->d_u[0 * stride + 1], recv_buf,
+                        row_bytes, cudaMemcpyHostToDevice, stream);
+        cudaStreamSynchronize(stream);
     }
-    
-    // 向下发送最后一行，接收作为第ny_local+1行
+
+    // 向下发送最后一行，接收作为第ny_local+1行。
     if (rank < size - 1) {
-        MPI_Sendrecv(&u[ny_local * stride + 1], nx_local, MPI_DOUBLE, rank + 1, 0,
-                     &u[(ny_local + 1) * stride + 1], nx_local, MPI_DOUBLE, rank + 1, 0,
+        cudaMemcpyAsync(send_buf, &grid->d_u[ny_local * stride + 1],
+                        row_bytes, cudaMemcpyDeviceToHost, stream);
+        cudaStreamSynchronize(stream);
+        MPI_Sendrecv(send_buf, nx_local, MPI_DOUBLE, rank + 1, 0,
+                     recv_buf, nx_local, MPI_DOUBLE, rank + 1, 0,
                      MPI_COMM_WORLD, &status);
+        cudaMemcpyAsync(&grid->d_u[(ny_local + 1) * stride + 1], recv_buf,
+                        row_bytes, cudaMemcpyHostToDevice, stream);
+        cudaStreamSynchronize(stream);
     }
-    
-    // 复制回设备
-    cudaMemcpyAsync(grid->d_u, grid->h_u,
-                    (grid->ny_local + 2) * grid->stride * sizeof(double),
-                    cudaMemcpyHostToDevice, stream);
+
+    if (use_pageable) {
+        free(send_buf);
+        free(recv_buf);
+    }
 }
 
 /* ============================================================
@@ -226,6 +247,8 @@ double solve_cuda(Grid *grid, SolverConfig *cfg, cudaStream_t stream) {
             double *temp = grid->d_u;
             grid->d_u = grid->d_u_new;
             grid->d_u_new = temp;
+
+            exchange_ghost_cuda(grid, cfg, stream);
             
         } else if (cfg->method == GAUSS_SEIDEL) {
             // Gauss-Seidel迭代（红黑排序）
@@ -233,6 +256,7 @@ double solve_cuda(Grid *grid, SolverConfig *cfg, cudaStream_t stream) {
                 gs_kernel<<<grid_size, block_size, 0, stream>>>(
                     grid->d_u, cfg->nx_local, cfg->ny_local, grid->stride, 
                     color, cfg->nx_start, cfg->ny_start);
+                exchange_ghost_cuda(grid, cfg, stream);
             }
             
         } else if (cfg->method == SOR) {
@@ -241,11 +265,9 @@ double solve_cuda(Grid *grid, SolverConfig *cfg, cudaStream_t stream) {
                 sor_kernel<<<grid_size, block_size, 0, stream>>>(
                     grid->d_u, cfg->nx_local, cfg->ny_local, grid->stride,
                     color, cfg->omega, cfg->nx_start, cfg->ny_start);
+                exchange_ghost_cuda(grid, cfg, stream);
             }
         }
-        
-        // 交换虚拟边界
-        exchange_ghost_cuda(grid, cfg, stream);
         
         iter++;
         

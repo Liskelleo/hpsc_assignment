@@ -40,6 +40,12 @@ typedef struct {
     double *h_u_new;         // 主机端新值数组
     double *d_u;             // 设备端数组
     double *d_u_new;         // 设备端新值数组
+    double *h_pin_row_snd;   // pinned host row send buffer
+    double *h_pin_row_rcv;   // pinned host row recv buffer
+    double *h_pin_col_snd;   // pinned host column send buffer
+    double *h_pin_col_rcv;   // pinned host column recv buffer
+    double *d_col_l;         // device column buffer, left
+    double *d_col_r;         // device column buffer, right
     int stride;              // 行步长 = nx_local + 2
     int ny_local;            // 本地行数
     int nx_local;            // 本地列数
