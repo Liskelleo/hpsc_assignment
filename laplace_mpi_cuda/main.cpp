@@ -18,6 +18,7 @@
  *   argv[5] - method (jacobi/gs/sor，默认sor)
  *   argv[6] - use_cuda (0/1，默认1)
  *   argv[7] - use_async (0/1，默认0，选做)
+ *   argv[8] - output file (.bin，可选；默认写入 bin/)
  * 
  * 边界条件：顶部为1，底/左/右为0，内部初始化为1（产生梯度）
  */
@@ -25,6 +26,8 @@
 #include "laplace_solver.h"
 #include <getopt.h>
 #include <chrono>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 void print_usage(const char *prog) {
     printf("用法: %s [选项]\n", prog);
@@ -36,7 +39,7 @@ void print_usage(const char *prog) {
     printf("  -m <method>       迭代方法: jacobi, gs, sor (默认: sor)\n");
     printf("  -c <0/1>          使用CUDA (默认: 1)\n");
     printf("  -a <0/1>          使用异步Stream (选做, 默认: 0)\n");
-    printf("  -o <filename>     输出文件名 (默认: result.vtk)\n");
+    printf("  -o <filename>     输出文件名 (默认: bin/result_*.bin)\n");
     printf("  -h                显示帮助\n");
 }
 
@@ -52,7 +55,7 @@ int main(int argc, char *argv[]) {
     IterMethod method = SOR;
     int use_cuda = 1;
     int use_async = 0;
-    char output_filename[256] = "result.vtk";
+    char output_filename[256] = {0};
     
     // 简化版参数解析（支持位置参数）
     if (argc >= 3) {
@@ -68,6 +71,9 @@ int main(int argc, char *argv[]) {
     }
     if (argc >= 7) use_cuda = atoi(argv[6]);
     if (argc >= 8) use_async = atoi(argv[7]);
+    if (argc >= 9) {
+        snprintf(output_filename, sizeof(output_filename), "%s", argv[8]);
+    }
     
     // 计算最优松弛因子（SOR）
     double pi = acos(-1.0);
@@ -76,6 +82,22 @@ int main(int argc, char *argv[]) {
     // ========== 3. 配置求解器 ==========
     SolverConfig cfg;
     init_config(&cfg, nx, ny, tol, max_iters, method, omega, rank, size);
+
+    if (rank == 0) {
+        mkdir("bin", 0755);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if (output_filename[0] == '\0') {
+        const char *method_name =
+            method == JACOBI ? "jacobi" :
+            (method == GAUSS_SEIDEL ? "gs" : "sor");
+        snprintf(output_filename, sizeof(output_filename),
+                 "bin/result_%s_%dx%d_np%d_%s%s.bin",
+                 method_name, nx, ny, size,
+                 use_cuda ? "cuda" : "cpu",
+                 (use_cuda && use_async) ? "_async" : "");
+    }
     
     // ========== 4. 分配网格 ==========
     Grid grid;
@@ -99,6 +121,7 @@ int main(int argc, char *argv[]) {
         printf("最大迭代次数: %d\n", max_iters);
         printf("使用CUDA: %s\n", use_cuda ? "是" : "否");
         printf("异步Stream: %s\n", use_async ? "是" : "否");
+        printf("输出文件: %s\n", output_filename);
         printf("========================================\n");
     }
     

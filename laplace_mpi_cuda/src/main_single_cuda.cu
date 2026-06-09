@@ -11,6 +11,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <vector>
 
 __device__ inline double atomicMaxDoubleSingle(double *address, double val) {
@@ -87,7 +90,10 @@ int main(int argc, char **argv) {
     int ny = argc > 2 ? std::atoi(argv[2]) : 512;
     double tol = argc > 3 ? std::atof(argv[3]) : 1e-6;
     int max_iters = argc > 4 ? std::atoi(argv[4]) : 50000;
-    const char *output = argc > 5 ? argv[5] : "result_single_cuda.bin";
+    mkdir("bin", 0755);
+    std::string default_output =
+        "bin/result_single_cuda_" + std::to_string(nx) + "x" + std::to_string(ny) + ".bin";
+    const char *output = argc > 5 ? argv[5] : default_output.c_str();
 
     int stride = nx + 2;
     size_t count = static_cast<size_t>(ny + 2) * stride;
@@ -147,6 +153,7 @@ int main(int argc, char **argv) {
 
     std::printf("Single-GPU CUDA完成! 计算时间: %.4f 秒 (迭代: %d, 残差: %.2e)\n",
                 elapsed_ms / 1000.0f, iter, resid);
+    std::printf("输出文件: %s\n", output);
 
     cudaEventDestroy(start);
     cudaEventDestroy(stop);

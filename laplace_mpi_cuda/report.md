@@ -106,6 +106,7 @@ laplace_mpi_cuda/
 ├── size_scaling.sh            # CPU、MPI+CUDA、单GPU size scaling
 ├── bench_pinned.sh            # pageable vs pinned ghost exchange对比
 ├── check_mpi_io.py            # MPI-IO输出验证
+├── bin/                       # 每个算例的二进制结果输出目录（*.bin）
 └── visualize.py               # 温度场可视化
 ```
 
@@ -473,7 +474,7 @@ CPU随np增加而加速，说明MPI decomposition本身有效。
 
 ### 11.1 MPI 并行 IO 实现
 
-在求解程序中实现 MPI 并行 IO，对二维温度场由多个 MPI 进程并行输出至同一个二进制文件。`mpi_io.cpp` 使用 global row-major offset 计算每一行在全局文件中的写入位置，从而保证输出顺序与 global grid 一致，并避免写入各进程本地 ghost cells。对应核心代码：
+在求解程序中实现 MPI 并行 IO，对二维温度场由多个 MPI 进程并行输出至同一个二进制文件。每个算例默认在 `bin/` 目录下生成 `.bin` 文件；文件内容为 global grid 的 row-major 顺序，包含物理边界点，但不包含各 MPI 进程本地 ghost cells。`mpi_io.cpp` 使用 global row-major offset 计算每个 rank 负责的连续全局行在文件中的写入位置。对应核心代码：
 
 ```cpp
 MPI_Offset offset =

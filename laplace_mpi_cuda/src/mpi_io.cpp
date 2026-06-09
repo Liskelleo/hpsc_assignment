@@ -28,10 +28,7 @@ void mpi_io_write(const char *filename, Grid *grid, SolverConfig *cfg, int iter)
                   MPI_MODE_CREATE | MPI_MODE_WRONLY,
                   MPI_INFO_NULL, &fh);
 
-    if (rank == 0) {
-        MPI_File_set_size(fh, (MPI_Offset)(ny + 2) * nx_global * sizeof(double));
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_File_set_size(fh, (MPI_Offset)(ny + 2) * nx_global * sizeof(double));
 
     int first_global_row = cfg->ny_start;
     int last_global_row = cfg->ny_start + cfg->ny_local - 1;

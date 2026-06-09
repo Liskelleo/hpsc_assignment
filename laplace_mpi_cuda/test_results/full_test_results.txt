@@ -1,28 +1,40 @@
 === Laplace MPI+CUDA Full Test Results ===
 Date restored: Tue Jun 9 2026
+Latest verification run: Tue Jun 9 2026, 18:31 CST
 
 This file is the complete text result log referenced by report.md.  Historical
 timing data are preserved to reflect the iterative optimization process.
-Figures and validation files were regenerated locally with visualize.py.
+Current smoke tests verify that the code builds, runs, writes every case to
+bin/*.bin, and that MPI-IO output is global row-major without local ghost cells.
 
-=== 0. Current smoke verification, Tue Jun 9 2026 ===
+=== 0. Current bin-output verification, Tue Jun 9 2026 ===
 Build: PASS (`make` builds `laplace_mpi_cuda` and `laplace_cuda_single`)
-MPI-IO smoke test: PASS (`check_mpi_io.py result.vtk --nx 128 --ny 128`)
+Default output directory: PASS (`bin/`)
 
-Current representative runs:
-CPU SOR       | 128x128 np=1 | time 0.0645 s | steps 300  | residual 2.63e-7
-MPI CPU SOR   | 128x128 np=2 | time 0.1064 s | steps 300  | residual 1.98e-7
-CPU SOR       | 512x512 np=1 | time 4.6640 s | steps 1050 | residual 5.40e-7
-CUDA SOR      | 512x512 np=1 | time 0.2455 s | steps 1050 | residual 5.40e-7
-CUDA SOR      | 1024x1024 np=1 | time 0.5519 s | steps 2000 | residual 8.90e-7
-Single CUDA   | 512x512 | time 0.0888 s | steps 1000 | residual 5.96e-7
-Single CUDA   | 1024x1024 | time 0.4799 s | steps 1900 | residual 8.21e-7
+Small binary output smoke tests:
+CPU SOR       | 64x64 np=1 | bin/result_sor_64x64_np1_cpu.bin        | PASS
+MPI CPU SOR   | 64x64 np=2 | bin/result_sor_64x64_np2_cpu.bin        | PASS
+MPI CUDA SOR  | 64x64 np=2 | bin/result_sor_64x64_np2_cuda.bin       | PASS
+Single CUDA   | 64x64      | bin/result_single_cuda_64x64.bin        | PASS
+
+Current representative runs from `./run_tests.sh`:
+Jacobi CPU    | 128x128 np=2 | time 0.0977 s  | steps 2000 | residual 1.88e-4
+GS CPU        | 128x128 np=2 | time 84.7877 s | steps 2000 | residual 2.18e-4
+SOR CPU       | 128x128 np=2 | time 10.7465 s | steps 300  | residual 1.98e-7
+CPU SOR       | 512x512 np=2 | time 50.3263 s | steps 1050 | residual 5.66e-7
+CUDA SOR      | 512x512 np=2 | time 9.0625 s  | steps 1050 | residual 5.66e-7
+CUDA async    | 512x512 np=2 | time 10.0342 s | steps 1050 | residual 5.66e-7
+CPU SOR       | 1024x1024 np=1 | time 50.0755 s | steps 2000 | residual 8.90e-7
+CUDA SOR      | 1024x1024 np=1 | time 0.6386 s  | steps 2000 | residual 8.90e-7
+Single CUDA   | 1024x1024     | time 0.4185 s  | steps 1900 | residual 8.21e-7
 
 Notes:
-- Numerical convergence behavior matches the report: Jacobi remains slow,
-  SOR converges in hundreds/thousands of steps, CUDA reaches the same residual.
+- Numerical convergence behavior matches the report: Jacobi/GS remain slow,
+  SOR converges in hundreds/thousands of steps, and CUDA reaches the same
+  residual tolerance.
 - Current CPU absolute timings are slower than the historical report data on
-  this WSL run, but CUDA 1024x1024 and single-GPU CUDA timings remain close to
+  this WSL run, so historical timing tables are kept for the optimization
+  narrative.  The CUDA 1024x1024 and single-GPU CUDA timings remain close to
   the report values.
 
 === 1. Historical baseline: Jacobi, 512x512 ===
@@ -94,6 +106,7 @@ multiple MPI ranks.  They measure single-GPU context/copy/halo contention, not
 true multi-GPU strong scaling.
 
 === 12. MPI-IO validation on 512x512 binary output ===
+Output file: bin/result_sor_512x512_i50000.bin
 Shape: 514 x 514 = 264196 doubles
 Finite values: PASS
 Ghost-cell exclusion: PASS
