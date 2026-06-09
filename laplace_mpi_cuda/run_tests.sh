@@ -52,7 +52,7 @@ make
     echo "test_results/multi_resolution_comparison.png"
     echo "test_results/result_sor_1024x1024_i50000.png"
     echo "test_results/result_single_cuda_512x512_i50000.png"
-} | tee test_results/full_test_results.txt
+} | tee test_results/full_test_results.txt test_results.txt
 
 echo
-echo "测试完成！结果保存在 test_results/full_test_results.txt"
+echo "测试完成！结果保存在 test_results/full_test_results.txt 和 test_results.txt"
