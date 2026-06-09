@@ -221,7 +221,7 @@ __global__ void sor_kernel(double *u, int nx_local, int ny_local, int stride,
 
 在较大规模、单进程GPU场景下，CUDA加速明显。结果如下图所示。
 
-![1024x1024 SOR温度场](../test_results/result_sor_1024x1024_i50000.png)
+<img src="../test_results/result_sor_1024x1024_i50000.png" alt="1024x1024 SOR温度场" style="zoom:33%;" />
 
 **图3：1024×1024 SOR温度场** 每个方向共有1026个点，其中首尾为物理边界点，不是各MPI进程本地ghost cells。
 
@@ -404,7 +404,7 @@ while (resid > tol && iter < max_iters) {
 
 下图展示了单GPU全局CUDA版本在512×512下输出的温度场。
 
-![单GPU全局CUDA 512x512温度场](test_results/result_single_cuda_512x512_i50000.png)
+<img src="../test_results/result_single_cuda_512x512_i50000.png" alt="单GPU全局CUDA 512x512温度场" style="zoom: 33%;" />
 
 **图4：单GPU全局CUDA 512×512温度场** 与MPI+CUDA版本输出一致，验证了实现的正确性。
 
