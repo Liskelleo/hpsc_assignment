@@ -8,6 +8,7 @@
 
 #include "laplace_solver.h"
 #include <mpi.h>
+#include <vector>
 
 void mpi_io_write(const char *filename, Grid *grid, SolverConfig *cfg, int iter) {
     (void)iter;
@@ -42,6 +43,9 @@ void mpi_io_write(const char *filename, Grid *grid, SolverConfig *cfg, int iter)
         last_global_row = ny + 1;
     }
 
+    int local_rows = last_global_row - first_global_row + 1;
+    std::vector<double> packed((size_t)local_rows * nx_global);
+
     for (int global_i = first_global_row; global_i <= last_global_row; ++global_i) {
         int local_i;
         if (global_i == 0 && rank == 0) {
@@ -52,11 +56,15 @@ void mpi_io_write(const char *filename, Grid *grid, SolverConfig *cfg, int iter)
             local_i = global_i - (cfg->ny_start - 1);
         }
 
-        MPI_Offset row_offset =
-            ((MPI_Offset)global_i * nx_global) * sizeof(double);
-        MPI_File_write_at(fh, row_offset, &u[local_i * stride],
-                          nx_global, MPI_DOUBLE, &status);
+        int packed_i = global_i - first_global_row;
+        for (int j = 0; j < nx_global; ++j) {
+            packed[(size_t)packed_i * nx_global + j] = u[local_i * stride + j];
+        }
     }
+
+    MPI_Offset offset = ((MPI_Offset)first_global_row * nx_global) * sizeof(double);
+    MPI_File_write_at_all(fh, offset, packed.data(),
+                          local_rows * nx_global, MPI_DOUBLE, &status);
 
     MPI_File_close(&fh);
 }

@@ -5,6 +5,26 @@ This file is the complete text result log referenced by report.md.  Historical
 timing data are preserved to reflect the iterative optimization process.
 Figures and validation files were regenerated locally with visualize.py.
 
+=== 0. Current smoke verification, Tue Jun 9 2026 ===
+Build: PASS (`make` builds `laplace_mpi_cuda` and `laplace_cuda_single`)
+MPI-IO smoke test: PASS (`check_mpi_io.py result.vtk --nx 128 --ny 128`)
+
+Current representative runs:
+CPU SOR       | 128x128 np=1 | time 0.0645 s | steps 300  | residual 2.63e-7
+MPI CPU SOR   | 128x128 np=2 | time 0.1064 s | steps 300  | residual 1.98e-7
+CPU SOR       | 512x512 np=1 | time 4.6640 s | steps 1050 | residual 5.40e-7
+CUDA SOR      | 512x512 np=1 | time 0.2455 s | steps 1050 | residual 5.40e-7
+CUDA SOR      | 1024x1024 np=1 | time 0.5519 s | steps 2000 | residual 8.90e-7
+Single CUDA   | 512x512 | time 0.0888 s | steps 1000 | residual 5.96e-7
+Single CUDA   | 1024x1024 | time 0.4799 s | steps 1900 | residual 8.21e-7
+
+Notes:
+- Numerical convergence behavior matches the report: Jacobi remains slow,
+  SOR converges in hundreds/thousands of steps, CUDA reaches the same residual.
+- Current CPU absolute timings are slower than the historical report data on
+  this WSL run, but CUDA 1024x1024 and single-GPU CUDA timings remain close to
+  the report values.
+
 === 1. Historical baseline: Jacobi, 512x512 ===
 Jacobi CPU np=1 | time 13.46 s | steps 50000 | residual 3.83e-6 | not converged
 

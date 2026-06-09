@@ -476,10 +476,10 @@ CPU随np增加而加速，说明MPI decomposition本身有效。
 在求解程序中实现 MPI 并行 IO，对二维温度场由多个 MPI 进程并行输出至同一个二进制文件。`mpi_io.cpp` 使用 global row-major offset 计算每一行在全局文件中的写入位置，从而保证输出顺序与 global grid 一致，并避免写入各进程本地 ghost cells。对应核心代码：
 
 ```cpp
-MPI_Offset row_offset =
-    ((MPI_Offset)global_i * nx_global + write_start_x) * sizeof(double);
-MPI_File_write_at(fh, row_offset, row_buf.data(),
-                  local_cols, MPI_DOUBLE, &status);
+MPI_Offset offset =
+    ((MPI_Offset)first_global_row * nx_global) * sizeof(double);
+MPI_File_write_at_all(fh, offset, packed.data(),
+                      local_rows * nx_global, MPI_DOUBLE, &status);
 ```
 
 ### 11.2 验证结果
