@@ -1,3 +1,0 @@
-/home/liskell/laplace_mpi_cuda/build/CMakeFiles/rebuild_cache.dir
-/home/liskell/laplace_mpi_cuda/build/CMakeFiles/edit_cache.dir
-/home/liskell/laplace_mpi_cuda/build/CMakeFiles/laplace_mpi_cuda.dir
