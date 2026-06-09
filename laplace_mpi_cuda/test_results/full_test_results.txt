@@ -1,26 +1,79 @@
-=== Full Test Results: restored report data + regenerated figures ===
-Date restored: Tue Jun  9 2026
+=== Laplace MPI+CUDA Full Test Results ===
+Date restored: Tue Jun 9 2026
 
-This file restores the result log referenced by report.md.  Timing values are
-the historical 2026-06-08 measurements preserved in the report.  Figures and
-the 512x512 binary field were regenerated locally with visualize.py.
+This file is the complete text result log referenced by report.md.  Historical
+timing data are preserved to reflect the iterative optimization process.
+Figures and validation files were regenerated locally with visualize.py.
 
-=== Correctness / method comparison, 128x128 ===
-Jacobi       | 0.0198 s, 2000 steps, residual 1.11e-4
-Gauss-Seidel | 0.0676 s, 2000 steps, residual 8.48e-5
-SOR          | 0.0215 s, 300 steps, residual 1.32e-7
+=== 1. Historical baseline: Jacobi, 512x512 ===
+Jacobi CPU np=1 | time 13.46 s | steps 50000 | residual 3.83e-6 | not converged
 
-=== CPU vs CUDA, 512x512 after stability fix ===
-CPU SOR       | 0.6387 s, 1000 steps, residual 5.96e-7
-CUDA SOR sync | 0.7526 s, 1000 steps, residual 5.96e-7
-CUDA async    | 0.8169 s, 1000 steps, residual 5.96e-7
+=== 2. Correctness / method comparison, 128x128 ===
+Jacobi       | time 0.0198 s | steps 2000 | residual 1.11e-4
+Gauss-Seidel | time 0.0676 s | steps 2000 | residual 8.48e-5
+SOR          | time 0.0215 s | steps 300  | residual 1.32e-7
 
-=== CPU vs CUDA, 1024x1024 ===
-CPU SOR np=1       | 12.7470 s, 1900 steps, residual 8.21e-7
-CUDA SOR np=1      | 0.5551 s, 1900 steps, residual 8.21e-7
-CUDA async np=2    | 1.5916 s, 1900 steps, residual 8.21e-7
+=== 3. CPU vs CUDA after stability fix, 512x512 ===
+CPU SOR       | np=2 | time 0.6387 s | steps 1000 | residual 5.96e-7
+CUDA SOR sync | np=2 | time 0.7526 s | steps 1000 | residual 5.96e-7
+CUDA async    | np=2 | time 0.8169 s | steps 1000 | residual 5.96e-7
 
-=== MPI-IO validation on regenerated 512x512 binary ===
+=== 4. CPU vs CUDA, 1024x1024 single process ===
+CPU SOR       | np=1 | time 12.7470 s | steps 1900 | residual 8.21e-7
+CUDA SOR      | np=1 | time 0.5551 s  | steps 1900 | residual 8.21e-7
+Relative speedup: 22.96x
+
+=== 5. Pinned memory comparison, CUDA SOR 1024x1024 ===
+pageable np=1 | time 0.5200 s  | steps 1900
+pinned   np=1 | time 0.4941 s  | steps 1900
+pageable np=2 | time 1.6064 s  | steps 1900
+pinned   np=2 | time 1.7585 s  | steps 1900
+pageable np=4 | time 9.1337 s  | steps 2100
+pinned   np=4 | time 9.2890 s  | steps 1900
+pageable np=8 | time 28.1620 s | steps 4450
+pinned   np=8 | time 9.1002 s  | steps 1900
+
+=== 6. Async stream comparison ===
+512x512 sync CUDA  | time 0.8745 s | steps 1000 | residual 5.96e-7
+512x512 async CUDA | time 0.8169 s | steps 1000 | residual 5.96e-7
+1024x1024 sync CUDA  | time 1.6386 s | steps 1900 | residual 8.21e-7
+1024x1024 async CUDA | time 1.5916 s | steps 1900 | residual 8.21e-7
+
+=== 7. Multi-subdomain CUDA stability fix ===
+Before fix, CUDA np>=4 sometimes produced exploding residuals or false 0.00e+00.
+After fix:
+1024x1024 CUDA np=4 | steps 1900 | residual 9.04e-7 | normal convergence
+1024x1024 CUDA np=8 | steps 1900 | residual 8.21e-7 | normal convergence
+
+=== 8. CPU strong scaling, fixed 1024x1024 ===
+CPU np=1 | time 12.7470 s | speedup 1.00x
+CPU np=2 | time 7.7941 s  | speedup 1.64x
+CPU np=4 | time 4.4429 s  | speedup 2.87x
+CPU np=8 | time 2.5610 s  | speedup 4.98x
+
+=== 9. CPU weak scaling, about 256x256 per process ===
+CPU np=1 | grid 256x256 | time 0.1771 s
+CPU np=2 | grid 362x362 | time 0.3234 s
+CPU np=4 | grid 512x512 | time 0.5388 s
+CPU np=8 | grid 724x724 | time 0.8651 s
+
+=== 10. Single-GPU size scaling ===
+grid 256x256  | CPU np=1 0.1892 s  | MPI+CUDA np=1 0.0305 s | single CUDA 0.0172 s | speedup vs CPU 11.00x
+grid 512x512  | CPU np=1 1.5056 s  | MPI+CUDA np=1 0.0892 s | single CUDA 0.0701 s | speedup vs CPU 21.48x
+grid 1024x1024| CPU np=1 11.7274 s | MPI+CUDA np=1 0.4769 s | single CUDA 0.4360 s | speedup vs CPU 26.90x
+grid 2048x2048| CPU np=1 not tested | MPI+CUDA np=1 3.2303 s | single CUDA 3.2459 s
+
+=== 11. Single-GPU MPI sharing, CUDA SOR 1024x1024 ===
+CUDA np=1 | time 0.5551 s  | relative 1.00x
+CUDA np=2 | time 1.6335 s  | relative 0.34x
+CUDA np=4 | time 9.5703 s  | relative 0.06x
+CUDA np=8 | time 15.8624 s | relative 0.04x
+
+Interpretation: these CUDA np=1,2,4,8 tests use one physical GPU shared by
+multiple MPI ranks.  They measure single-GPU context/copy/halo contention, not
+true multi-GPU strong scaling.
+
+=== 12. MPI-IO validation on 512x512 binary output ===
 Shape: 514 x 514 = 264196 doubles
 Finite values: PASS
 Ghost-cell exclusion: PASS
@@ -31,8 +84,24 @@ left boundary max: 0
 right boundary max: 0
 MPI-IO validation: PASS
 
-=== Regenerated figures ===
+=== 13. Regenerated figures ===
 test_results/convergence_frames.png
 test_results/multi_resolution_comparison.png
 test_results/result_sor_1024x1024_i50000.png
 test_results/result_single_cuda_512x512_i50000.png
+
+=== 14. Source/script files used by report ===
+src/laplace_solver.h
+src/laplace_solver.cpp
+src/laplace_cuda.cu
+src/mpi_io.cpp
+src/stream_async.cu
+src/main_single_cuda.cu
+main.cpp
+Makefile
+run_tests.sh
+scaling_compare.sh
+size_scaling.sh
+bench_pinned.sh
+check_mpi_io.py
+visualize.py

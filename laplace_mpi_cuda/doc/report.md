@@ -403,7 +403,7 @@ while (resid > tol && iter < max_iters) {
 
 下图展示了单GPU全局CUDA版本在512×512下输出的温度场。
 
-![单GPU全局CUDA 512x512温度场](../test_results/result_single_cuda_512x512_i50000.png)
+![单GPU全局CUDA 512x512温度场](test_results/result_single_cuda_512x512_i50000.png)
 
 **图4：单GPU全局CUDA 512×512温度场** 与MPI+CUDA版本输出一致，验证了实现的正确性。
 
