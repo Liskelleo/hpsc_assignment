@@ -11,6 +11,7 @@
 | 操作系统   | Ubuntu 20.04.6 LTS, WSL2 Ubuntu-HPC                     |
 | MPI        | Open MPI 4.0.3                                          |
 | CUDA       | CUDA 12.9                                               |
+| CPU        | Intel Xeon Silver 4210R @ 2.40GHz，10核/20线程，WSL可见20个逻辑CPU |
 | GPU        | NVIDIA RTX A2000, Compute Capability 8.6, 3584 CUDA核心 |
 | CPU编译器  | `mpicxx -O3 -fopenmp`                                   |
 | CUDA编译器 | `nvcc -O3 -arch=sm_86`                                  |
