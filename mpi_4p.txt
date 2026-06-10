@@ -1,0 +1,10 @@
+--------------------------------------------------------------------------
+mpirun was unable to launch the specified application as it could not access
+or execute an executable:
+
+Executable: ./clover_leaf
+Node: LAPTOP-L4UNHQO9
+
+while attempting to start process rank 0.
+--------------------------------------------------------------------------
+4 total processes failed to start

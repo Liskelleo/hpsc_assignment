@@ -1,0 +1,8 @@
+# CloverLeaf 性能测试汇总报告
+
+## 测试配置
+- 小算例: clover_bm_short.in (960×960, 87步)
+- 大算例: clover_bm16_short.in (3840×3840, 87步)
+- 测试时间: $(date)
+
+## MPI 测试结果（小算例）

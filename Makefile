@@ -1,4 +1,6 @@
-PACKAGE=CloverLeaf
+ls /usr/lib/cuda*
+ls /usr/lib/x86_64-linux-gnu/libcudart.so*
+dpkg -L nvidia-cuda-toolkit 2>/dev/null | head -5PACKAGE=CloverLeaf
 
 help:
 	@echo "  CloverLeaf, a Lagrangian-Eulerian hydrodynamics mini-application   "

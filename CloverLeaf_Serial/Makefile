@@ -1,3 +1,8 @@
+CC = gcc
+FC = gfortran
+CFLAGS = -O3
+FFLAGS = -O3
+
 #Crown Copyright 2012 AWE.
 #
 # This file is part of CloverLeaf.

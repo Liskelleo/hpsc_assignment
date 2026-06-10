@@ -1,3 +1,8 @@
+CC = gcc
+FC = gfortran
+CFLAGS = -O2 -march=x86-64
+FFLAGS = -O2 -march=x86-64 -fallow-argument-mismatch
+
 #Crown Copyright 2012 AWE.
 #
 # This file is part of CloverLeaf.

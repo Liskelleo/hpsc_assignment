@@ -20,7 +20,7 @@
 #  @details Agnostic, platform independent makefile for the Clover Leaf benchmark code.
 
 
-ifndef COMPILER
+ifdef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
 
@@ -39,7 +39,7 @@ OMP=$(OMP_$(COMPILER))
 
 FLAGS_INTEL     = -O3 -ipo
 FLAGS_SUN       = -O2
-FLAGS_GNU       = -O2
+FLAGS_GNU       = -O2 -fallow-argument-mismatch
 FLAGS_CRAY      = -O2 -em -ra -f free -F
 FLAGS_PGI       = -O2 -Mpreprocess
 FLAGS_PATHSCALE = -O2
@@ -81,12 +81,13 @@ endif
 
 # flags for nvcc
 # set NV_ARCH to select the correct one
-NV_ARCH=KEPLER
+NV_ARCH=AMPERE
 CODE_GEN_FERMI=-gencode arch=compute_20,code=sm_21
 CODE_GEN_KEPLER=-gencode arch=compute_35,code=sm_35
 CODE_GEN_KEPLER_CONSUMER=-gencode arch=compute_30,code=sm_30
 CODE_GEN_MAXWELL=-gencode arch=compute_50,code=sm_50
 CODE_GEN_PASCAL=-gencode arch=compute_60,code=sm_60
+CODE_GEN_AMPERE=-gencode arch=compute_86,code=sm_86
 
 LDLIBS+=-lstdc++ -lcudart
 
@@ -98,7 +99,7 @@ C_MPI_COMPILER=mpicc
 NV_FLAGS+=-D MANUALLY_CHOOSE_GPU
 
 # requires CUDA_HOME to be set - not the same on all machines
-NV_FLAGS=-I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict -Xcompiler "$(CFLAGS_GNU)" -D MPI_HDR $(NV_OPTIONS)
+NV_FLAGS=-I$(CUDA_HOME)/include $(CODE_GEN_$(NV_ARCH)) -restrict -Xcompiler "$(CFLAGS_GNU)" -D MPI_HDR $(NV_OPTIONS) --allow-unsupported-compiler
 NV_FLAGS+=-D NO_ERR_CHK
 libdir.x86_64 = lib64
 libdir.i686   = lib
