@@ -111,6 +111,51 @@ laplace_mpi_cuda/
 └── visualize.py               # 温度场可视化
 ```
 
+### 3.1 程序流程图
+
+```mermaid
+%%{init: {"flowchart": {"htmlLabels": true, "nodeSpacing": 25, "rankSpacing": 35}} }%%
+flowchart TB
+    A[程序开始] --> B[初始化 MPI 环境]
+    B --> C["解析参数<br/>N, tol, iter, method"]
+    C --> D["计算 omega"]
+    D --> E["区域分解<br/>初始化 SolverConfig"]
+    E --> F["分配 Grid<br/>含 ghost cells"]
+    F --> G["初始化边界<br/>与温度场"]
+    G --> H{是否使用 CUDA?}
+
+    H -- 是 --> I["CUDA 路径"]
+    I --> I1["H2D 拷贝"]
+    I1 --> I2{迭代方法}
+    I2 -- Jacobi --> I3["Jacobi kernel"]
+    I2 -- GS/SOR --> I4["Red-Black kernel"]
+    I3 --> I5["Halo exchange"]
+    I4 --> I5
+    I5 --> I6["计算 residual"]
+    I6 --> I7{"收敛<br/>或到上限?"}
+    I7 -- 否 --> I2
+    I7 -- 是 --> I8["D2H 拷贝"]
+    I8 --> L
+
+    H -- 否 --> J["CPU 路径"]
+    J --> J1{迭代方法}
+    J1 -- Jacobi --> J2["Jacobi 双缓冲"]
+    J1 -- GS/SOR --> J3["Red-Black OpenMP"]
+    J2 --> J4["交换 ghost rows"]
+    J3 --> J4
+    J4 --> J5["计算 residual<br/>MPI_Allreduce"]
+    J5 --> J6{"收敛<br/>或到上限?"}
+    J6 -- 否 --> J1
+    J6 -- 是 --> L
+
+    L["MPI-IO 输出"]
+    L --> M["打包非 ghost 数据<br/>计算全局偏移"]
+    M --> N["集体写入 bin 文件"]
+    N --> O["释放资源"]
+    O --> P[结束 MPI 环境]
+    P --> Q[程序结束]
+```
+
 ------
 
 ## 4. 第一轮优化：Jacobi 到 Red-Black SOR
@@ -142,7 +187,7 @@ for (int color = 0; color < 2; color++)
 | :----------- | :------- | :------- | :------- |
 | Jacobi       | 0.0198 s | 2000     | 1.11e-4  |
 | Gauss-Seidel | 0.0676 s | 2000     | 8.48e-5  |
-| SOR          | 0.0215 s | 300      | 1.32e-07 |
+| SOR          | 0.0215 s | 300      | 1.32e-7  |
 
 ### 4.3 可视化验证
 
@@ -156,7 +201,7 @@ for (int color = 0; color < 2; color++)
 
 ![多分辨率SOR对比](../test_results/multi_resolution_comparison.png)
 
-**图2：Python SOR demo 多分辨率对比** 上排为三种分辨率的温度场，中排为残差随迭代次数的下降曲线，下排为 $y=0.5$ 中心线的温度剖面。该图用于展示数值解形态与收敛趋势，不作为CUDA性能或scaling结果。
+**图2：Python SOR demo 多分辨率对比** 上排为三种分辨率的温度场，中排为残差随迭代次数的下降曲线，下排为 $y=0.5$ 中心线的温度剖面。
 
 ## 5. 第二轮优化：CPU+MPI 到 CUDA 同步版
 
@@ -165,7 +210,7 @@ for (int color = 0; color < 2; color++)
 **512×512 CPU SOR测试：**
 
 ```
-CPU版本: SOR完成! 计算时间: 0.6387 秒 (迭代: 1000, 残差: 5.96e-07)
+CPU版本: SOR完成! 计算时间: 0.6387 秒 (迭代: 1000, 残差: 5.96e-7)
 ```
 
 CPU SOR已经显著减少迭代步数，但每步仍需遍历所有本地网格点。随着网格规模增大，CPU浮点并行度有限；512×512 = 262144内点，每步计算量已较为可观，而GPU拥有数千个并行核心，可以同时处理大量网格点，GPU并行计算更具优势。
@@ -224,7 +269,7 @@ __global__ void sor_kernel(double *u, int nx_local, int ny_local, int stride,
 
 <img src="../test_results/result_sor_1024x1024_i50000.png" alt="1024x1024 SOR温度场" style="zoom:33%;" />
 
-**图3：1024×1024 SOR温度场** 每个方向共有1026个点，其中首尾为物理边界点，不是各MPI进程本地ghost cells。
+**图3：1024×1024 SOR温度场** 每个方向共有1026个点，其中首尾为物理边界点。
 
 ------
 
@@ -468,6 +513,8 @@ CPU随np增加而加速，说明MPI decomposition本身有效。
 | 8    | 15.8624 s           | 0.04×    |
 
 该退化来自CUDA context竞争、kernel launch排队、D2H/H2D拷贝竞争、halo exchange增加以及单GPU资源固定。该结果不代表多GPU scaling。
+
+最新复测进一步说明，单GPU多MPI进程测试波动很大，不适合作为理想scaling结果，只能作为single-GPU sharing和通信竞争分析。
 
 ------
 
