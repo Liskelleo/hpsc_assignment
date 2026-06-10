@@ -14,14 +14,18 @@
 
 该部分实现二维 Laplace 方程的 MPI+CUDA 并行求解程序，包含 Jacobi、Gauss-Seidel、SOR、MPI 并行 IO、CUDA kernel、Pinned Memory、异步 Stream 和单 GPU 全局 CUDA 版本等内容。
 
-主要文件：
-
-- `laplace_mpi_cuda/doc/report.md`：第二部分正式报告
-- `laplace_mpi_cuda/src/`：核心源代码
-- `laplace_mpi_cuda/test_results/`：测试结果与可视化图片
-- `laplace_mpi_cuda/bin/`：运行生成的二进制输出文件
-- `laplace_mpi_cuda/run_tests.sh`、`scaling_compare.sh`、`size_scaling.sh`、`bench_pinned.sh`：测试脚本
-
 ## 提交说明
 
-提交时请保留两个作业目录及其源码、脚本、报告和必要结果文件。最终压缩包按课程要求命名为“第XX小组期末大作业”。
+源码、脚本、必要结果文件见各自分支。报告文件位于根目录，包括：
+
+- `高性能计算期末大作业(刘汇川lpart1，3-7题)`
+- `高性能科学计算大作业(刘尚坤part2)`
+- `高性能科学计算大作业(杨译坤part1，1-4题)`
+
+小组成员：
+
+| 学号 | 姓名 |
+| :--- | :--- |
+| 2501111758 | 杨译坤 |
+| 2501111747 | 刘汇川 |
+| 2501111730 | 刘尚坤 |
